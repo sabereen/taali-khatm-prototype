@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types'
 import { COUNT_OF_AYAHS } from '@ghoran/metadata/constants'
 import translation from '@ghoran/translation/json/fa/tanzil-ansarian.json'
 import quranTextQPC1 from '@ghoran/text/json/quran-text-qpc-v1.json'
-import type { Khatm } from '@prisma/client'
+import type { TKhatm } from '@prisma/client'
 import { verifyPrivateKhatm } from '$lib/server/security'
 
 export type SelectedAyah = {
@@ -14,7 +14,7 @@ export type SelectedAyah = {
 }
 
 export type PickAyahResult = {
-	khatm: Khatm
+	khatm: TKhatm
 	ayat: SelectedAyah[]
 }
 
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async (event) => {
 	// اگر توکن داشت تلاش می‌کنیم اعتبارسنجی کنیم
 	// وگرنه نیازی به این کار نیست و شرط privateAllowed در کوئری جلوی درخواست بدون توکن به ختم خصوصی را می‌گیرد.
 	if (body.token) {
-		const khatm = await db.khatm.findUnique({ where: { id: body.khatmId } })
+		const khatm = await db.tKhatm.findUnique({ where: { id: body.khatmId } })
 		if (!khatm) throw error(404, { message: 'ختم وجود ندارد.' })
 		if (khatm?.private) {
 			privateAllowed = await verifyPrivateKhatm(khatm, body.token)
@@ -41,10 +41,9 @@ export const POST: RequestHandler = async (event) => {
 		}
 	}
 
-	const result = await db.khatm.update({
+	const result = await db.tKhatm.update({
 		where: {
 			id: body.khatmId,
-			sequential: true,
 			rangeType: 'ayah',
 			private: privateAllowed,
 			currentAyahIndex: { lt: COUNT_OF_AYAHS - count + 1 },
