@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, slide } from 'svelte/transition'
-	import type { SelectedAyah } from '../../api/khatm/pickNext/+server'
+	import type { SelectedAyah } from '../api/khatm/pickNext/+server'
 	import { Ayah } from '@ghoran/entity'
 	import { surah_getName } from '$lib/entity/Surah'
 	import { invalidateAll } from '$app/navigation'
