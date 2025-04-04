@@ -39,11 +39,9 @@
 
 	const parts = $derived(KhatmPart.fromList(data.khatm.parts))
 
-	const khatmLink = $derived(khatm.getLink(page.url.searchParams.get('token')))
-
 	async function share() {
 		try {
-			await khatm.share(khatmLink)
+			await khatm.share()
 		} catch (err) {
 			console.error(err)
 			toast('error', String(err))
@@ -72,7 +70,7 @@
 	<meta property="og:description" content={khatm.description} />
 	<meta property="og:logo" content="https://khatm.esangar.ir/hero.png" />
 	<meta property="og:image" content="https://khatm.esangar.ir/hero.png" />
-	<meta property="og:url" content="https://khatm.esangar.ir/khatm/{khatm.id}" />
+	<meta property="og:url" content={khatm.link} />
 	<meta property="og:type" content="website" />
 	{#if khatm.private}
 		<meta name="robots" content="noindex" />

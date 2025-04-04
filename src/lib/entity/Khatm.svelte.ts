@@ -1,21 +1,22 @@
 import { page } from '$app/state'
 import { COUNT_OF_AYAHS } from '@ghoran/metadata/constants'
-import type { Khatm as KhatmPlain, RangeType } from '@prisma/client'
+import type { TKhatm, RangeType } from '@prisma/client'
 import type { PickAyahResult } from '../../routes/api/khatm/pickNext/+server'
 import { PickedKhatmPart } from './PickedKhatmPart'
 import type { QuranRange } from './Range'
 import { untrack } from 'svelte'
+import { browser } from '$app/environment'
 
 const cache = new Map<number, Khatm>()
 
 export class Khatm {
-	plain = $state() as KhatmPlain
+	plain = $state() as TKhatm
 
-	private constructor(plain: KhatmPlain) {
+	private constructor(plain: TKhatm) {
 		this.plain = plain
 	}
 
-	static fromPlain(plain: KhatmPlain) {
+	static fromPlain(plain: TKhatm) {
 		let khatm = cache.get(plain.id)
 		if (khatm) {
 			untrack(() => {
@@ -30,7 +31,7 @@ export class Khatm {
 		return khatm!
 	}
 
-	static fromPlainList(plainList: KhatmPlain[]) {
+	static fromPlainList(plainList: TKhatm[]) {
 		return plainList.map((plain) => this.fromPlain(plain))
 	}
 
@@ -85,11 +86,15 @@ export class Khatm {
 	}
 
 	get sequential() {
-		return this.plain.sequential
+		return this.isAyahOriented
 	}
 
 	get currentAyahIndex() {
 		return this.plain.currentAyahIndex
+	}
+
+	get accessToken() {
+		return this.plain.accessToken || null
 	}
 
 	get isAyahOriented() {
@@ -104,8 +109,9 @@ export class Khatm {
 		return Khatm.getRangeTypeTitle(this.rangeType)
 	}
 
-	getLink(hash?: string | null) {
-		return `https://khatm.esangar.ir/khatm/${this.id}${hash ? `?token=${hash}` : ''}`
+	get link() {
+		const origin = browser ? location.origin : 'https://khatm.esangar.ir'
+		return `${origin}/k${this.id}${this.accessToken ? `?t=${this.accessToken}` : ''}`
 	}
 
 	async pickNextAyat(count = 1) {
@@ -114,7 +120,7 @@ export class Khatm {
 			body: JSON.stringify({
 				khatmId: this.id,
 				count,
-				token: page.url.searchParams.get('token'),
+				token: this.accessToken,
 			}),
 		})
 
@@ -127,21 +133,21 @@ export class Khatm {
 		return result
 	}
 
-	share(link = this.getLink()) {
+	share() {
 		return navigator.share({
-			url: link,
+			url: this.link,
 			title: `سامانه ختم قرآن گروهی | ${this.title}`,
 			text: this.description,
 		})
 	}
 
 	async pickRange(range: QuranRange) {
-		const response = await fetch(`/khatm/${this.id}`, {
+		const response = await fetch(`/k${this.id}`, {
 			method: 'POST',
 			body: JSON.stringify({
 				start: range.start,
 				end: range.end,
-				token: page.url.searchParams.get('token'),
+				token: this.accessToken,
 			}),
 		})
 		if (response.status !== 200) throw new Error('خطا')
@@ -153,7 +159,7 @@ export class Khatm {
 			start: range.start,
 			end: range.end,
 			khatm: this.plain,
-			hash: page.url.searchParams.get('token'),
+			hash: this.accessToken,
 		}).save()
 	}
 }
